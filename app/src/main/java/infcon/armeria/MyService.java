@@ -9,6 +9,6 @@ public final class MyService implements HttpService {
 
     @Override
     public HttpResponse serve(ServiceRequestContext ctx, HttpRequest req) throws Exception {
-        return null;
+        return HttpResponse.of("Hello, Armeria!");
     }
 }
