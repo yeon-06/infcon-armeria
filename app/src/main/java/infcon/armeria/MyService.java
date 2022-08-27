@@ -11,9 +11,11 @@ import java.util.concurrent.CompletableFuture;
 public final class MyService implements HttpService {
 
     private final WebClient fooClient;
+    private final WebClient barClient;
 
-    public MyService(WebClient fooClient) {
+    public MyService(WebClient fooClient, WebClient barClient) {
         this.fooClient = fooClient;
+        this.barClient = barClient;
     }
 
     @Override
@@ -22,10 +24,13 @@ public final class MyService implements HttpService {
 
         fooClient.get("/foo")
                 .aggregate()
-                .thenAccept(aggregatedHttpResponse -> {
-                    System.out.println(aggregatedHttpResponse.contentUtf8()); // 로그 찍기
-                    // 콜백에서는 바로 return할 수 없으니 future라는 껍데기를 이용했다.
-                    future.complete(aggregatedHttpResponse.toHttpResponse()); // 껍데기에 알맹이 넣기
+                .thenAccept(fooResponse -> {
+                    // foo가 완료된 후 bar를 호출
+                    barClient.get("/bar").aggregate()
+                            .thenAccept(barResponse -> {
+                                HttpResponse response = HttpResponse.of(fooResponse.contentUtf8() + '\n' + barResponse.contentUtf8());
+                                future.complete(response);
+                            });
                 });
         return HttpResponse.from(future);
     }
